@@ -133,9 +133,9 @@ class ConvGRUCell(nn.Module):
 
         # data size is [batch, channel, height, width]
         stacked_inputs = cat([input_, prev_state], dim=1)
-        update = F.sigmoid(self.update_gate(stacked_inputs))
-        reset = F.sigmoid(self.reset_gate(stacked_inputs))
-        out_inputs = F.tanh(self.out_gate(cat([input_, prev_state * reset], dim=1)))
+        update = torch.sigmoid(self.update_gate(stacked_inputs))
+        reset = torch.sigmoid(self.reset_gate(stacked_inputs))
+        out_inputs = torch.tanh(self.out_gate(cat([input_, prev_state * reset], dim=1)))
         new_state = prev_state * (1 - update) + out_inputs * update
 
         return new_state
