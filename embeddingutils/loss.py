@@ -359,7 +359,9 @@ class LossSegmentwiseFreeTags(WeightedLoss):
                 mask = gt_seg.ne(self.ignore_label)
                 gt_seg = gt_seg[mask] - 1
                 embeddings = embeddings[:, :, mask]
-                weighting_info['n_active_pixels'] = mask.long().sum().item()
+                weighting_info['n_active_pixels'] = gt_seg.long().sum().item()
+            else:
+                weighting_info['n_active_pixels'] = gt_seg.numel()
             weighting_info['n_segments'] = n_segments
             # calculate centroids and segment sizes of the individual segments
             centroids = []
