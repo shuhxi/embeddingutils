@@ -203,7 +203,7 @@ class LossSegmentwiseFreeTags(WeightedLoss):
     LOSS_FUNCS = {
         'mse': lambda tensor: tensor**2,
         'l1': lambda tensor: tensor.abs(),
-        'huber': lambda tensor: F.smooth_l1_loss(tensor, tensor.new_zeros(1), reduce='none'),
+        'huber': lambda tensor: F.smooth_l1_loss(tensor, tensor.new_zeros(1), reduction='none'),
     }
     PUSH_WEIGHTINGS = ['vanilla', 'per_pixel']
     PULL_WEIGHTINGS = ['vanilla', 'per_pixel']
@@ -321,13 +321,14 @@ class LossSegmentwiseFreeTags(WeightedLoss):
             distance_weights = weights
         else:
             distance_weights = 1
-
+            
         return (distance_weights * self.push_loss_func(F.relu(self.push_margin - cluster_distances))).sum()
 
     def pull_loss(self, embedding, centroids, weights=1):
         if embedding.shape[0] == 0:
             print('skipping pull because everything is ignored')
             return embedding.new_zeros(1)[0]
+        import pdb; pdb.set_trace()
         return (weights * self.pull_loss_func(
             F.relu(self.pull_distance_measure(embedding, centroids, dim=1) - self.pull_margin)
         )).sum()
@@ -342,14 +343,14 @@ class LossSegmentwiseFreeTags(WeightedLoss):
 
         pushes, reg_losses, pulls = [], [], []
         for gt_seg, embeddings in zip(gt_segs, preds):  # iterate over minibatch
-            n_segments = torch.max(gt_seg).int().item() + 1
+            n_segments = torch.max(gt_seg).int().item() + 1 # this only works for consecutively labelled data
             gt_seg = gt_seg.long()
             assert gt_seg.shape[0] == 1, 'segmentation should have one channel only'
 
             # get rid of extra spatial dimensions
             gt_seg = gt_seg[0].flatten()
             embeddings = embeddings.view(*embeddings.shape[:2], -1)
-
+            import pdb; pdb.set_trace()
             # set up dictionary with information used to compute the segment and pixel weights for pull and push
             weighting_info = dict(n_pixels=gt_seg.nelement())
 
@@ -359,14 +360,14 @@ class LossSegmentwiseFreeTags(WeightedLoss):
                 mask = gt_seg.ne(self.ignore_label)
                 gt_seg = gt_seg[mask] - 1
                 embeddings = embeddings[:, :, mask]
-                weighting_info['n_active_pixels'] = gt_seg.long().sum().item()
+                weighting_info['n_active_pixels'] = mask.long().sum().item()
             else:
                 weighting_info['n_active_pixels'] = gt_seg.numel()
             weighting_info['n_segments'] = n_segments
             # calculate centroids and segment sizes of the individual segments
             centroids = []
             segment_sizes = []
-            for seg_id in range(n_segments):
+            for seg_id in range(n_segments): #TODO: change to unique(gt_seg), unless consecutively labelled
                 segment_mask = gt_seg == seg_id
                 segment_sizes.append(segment_mask.float().sum())
                 centroids.append(embeddings[:, :, segment_mask].mean(-1))
