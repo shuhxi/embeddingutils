@@ -307,7 +307,7 @@ class LossSegmentwiseFreeTags(WeightedLoss):
             dim=1
         )
         # select vectorized upper triangle of distance matrix
-        upper_tri_index = torch.arange(1, n_segments * n_segments + 1) \
+        upper_tri_index = torch.arange(1, n_segments * n_segments + 1, device=distance_matrix.device) \
             .view(n_segments, n_segments) \
             .triu(diagonal=1).nonzero().transpose(0, 1)
         cluster_distances = distance_matrix[:, upper_tri_index[0], upper_tri_index[1]]
@@ -328,7 +328,6 @@ class LossSegmentwiseFreeTags(WeightedLoss):
         if embedding.shape[0] == 0:
             print('skipping pull because everything is ignored')
             return embedding.new_zeros(1)[0]
-        import pdb; pdb.set_trace()
         return (weights * self.pull_loss_func(
             F.relu(self.pull_distance_measure(embedding, centroids, dim=1) - self.pull_margin)
         )).sum()
@@ -350,7 +349,6 @@ class LossSegmentwiseFreeTags(WeightedLoss):
             # get rid of extra spatial dimensions
             gt_seg = gt_seg[0].flatten()
             embeddings = embeddings.view(*embeddings.shape[:2], -1)
-            import pdb; pdb.set_trace()
             # set up dictionary with information used to compute the segment and pixel weights for pull and push
             weighting_info = dict(n_pixels=gt_seg.nelement())
 
